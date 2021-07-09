@@ -1,6 +1,7 @@
 import subprocess
 from multiprocessing import Pool
 from subprocess import call
+from functools import partial
 
 import networkx as nx
 import numpy as np
@@ -18,7 +19,7 @@ from utils.inout import *
 
 
 def process_sample(source_file, args, project_dir, compile_arguments, type=''):
-    if type == 'ast' or type == 'bc':
+    if type == 'ast' or type == 'bc' or type == 'javabc':
         source_file_obj = SourceFile(source_file=source_file, arguments=args,
                                      project_dir=project_dir, compile_arguments=compile_arguments,
                                      analysis_type=type)
@@ -123,6 +124,39 @@ class ProjectCode:
         p.join()
         ProjectCode.pbar.close()
 
+    def retrieve_bc_for_java(self):
+	compile_commands_path = join_path(self.project_dir, 'compile_commands.json')
+        source_files_compile_args = {}
+        if not is_file(compile_commands_path):
+            print 'There is no compile commands file'
+            source_files = get_files_in_dir(self.project_dir, ext='.java', search_spaces=self.arguments.search_spaces)
+	else:
+            compile_commands = load_json(compile_commands_path)
+            if len(compile_commands) == 0:
+                print 'Compile commands file is empty'
+                source_files = get_files_in_dir(self.project_dir, ext='.java', search_spaces=self.arguments.search_spaces)
+            else:
+                source_files_compile_args = get_javafiles_compile_db(compile_commands)
+                source_files = source_files_compile_args.keys()
+
+        # source_files = get_files_in_dir(self.project_dir, ext='.java', search_spaces=self.arguments.search_spaces)
+        print 'Total number of java files : {}'.format(len(source_files))
+
+        ProjectCode.pbar = tqdm(total=len(source_files))
+        p = Pool(processes=1)
+
+        for source_file in source_files:
+            compile_arguments = []
+	    if source_files_compile_args:
+		compile_arguments = source_files_compile_args[source_file]
+            p.apply_async(process_sample, (source_file, self.arguments, self.project_dir, compile_arguments, 'javabc'),
+                          callback=my_callback)
+
+        p.close()
+        p.join()
+        ProjectCode.pbar.close()
+
+
     def prepare_bc(self):
         bc_dir = self.get_bc_dir_of_project()
         bitcode_files = get_files_in_dir(bc_dir, ext='.bc',
@@ -152,6 +186,25 @@ class ProjectCode:
         p.close()
         p.join()
         ProjectCode.pbar.close()
+	
+	pdg_files = get_files_in_dir(bcs_dir, ext='.pdg.dot')
+	for pdg_file in pdg_files:
+	    error_file = False
+	    f = open(pdg_file)
+	    line = f.readline()
+	    if 'No entry function found' in line or 'llvm-dg-dump:' in line:
+		error_file = True
+	    f.close()
+	    if error_file:
+		print 'removing error file: ', str(pdg_file)
+	        cmd = "rm " + str(pdg_file).replace('$', '\$')
+		print 'cmd: ', cmd
+	        try:
+	            os.system(cmd)
+	        except Exception as e:
+		    print("can not remove error pdg file: " + str(pdg_file))
+		    print e
+
 
     def retrieve_as(self):
         ProjectCode.erroneous_samples = 0
@@ -163,10 +216,16 @@ class ProjectCode:
             return
         ProjectCode.pbar = tqdm(total=len(pdg_files))
         p = Pool(processes=self.arguments.count_cpu)
+        res = []
         for pdg_file in pdg_files:
-            p.apply_async(process_sample, (pdg_file, self.arguments, bcs_dir, {}, 'as'),
-                          callback=my_callback)
-
+            res.append(p.apply_async(process_sample, (pdg_file, self.arguments, bcs_dir, {}, 'as'),
+                          callback=my_callback))
+	for r in res:
+	    try:
+		r.get(3600)
+	    except:
+		ProjectCode.erroneous_samples += 1
+    		ProjectCode.pbar.update()
         p.close()
         p.join()
         ProjectCode.pbar.close()

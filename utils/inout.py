@@ -150,6 +150,27 @@ def get_cfiles_compile_db(compile_db):
     return cfiles
 
 
+def get_javafiles_compile_db(compile_db):
+    cfiles = {}
+    for json_values in compile_db:
+        if 'file' in json_values:
+            file_path = json_values['file']
+	    # file_path = file_path.replace(':', '')
+	    file_path = file_path.replace(' ', '')
+            # print file_path
+            if file_path.endswith(".java"):
+                final_args = []
+		arg = json_values['command']
+		final_args.append(arg)
+
+                cfiles[file_path] = final_args
+		# print file_path, final_args
+            else:
+                print "Not a java file:", file_path
+
+    return cfiles
+
+
 def read_file(file_name):
     with open(file_name, 'r') as f:
         return f.read()

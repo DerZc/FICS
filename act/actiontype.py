@@ -4,6 +4,7 @@ from enum import Enum
 class ActionType(Enum):
     AST = 'Retrieve Abstract Syntax Tree'
     BC = 'Retrieve bitcode'
+    JAVABC = 'Retrieve bitcode of Java'
     PDG = 'Retrieve Program Dependence Graph'
     AS = 'Extract Abstract Forward Slices'
     FE = 'Feature Extraction'

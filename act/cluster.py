@@ -525,7 +525,9 @@ class Cluster(Act):
                     line_numbers = self.get_line_numbers(item, as_list=True)
                     source_path = join_path(project_source_path,
                                             item[len(project_bcs_path) + 1:item.find('.c/pdg') + 2])
-
+		    if str(source_path) == str(project_source_path):
+			source_path = join_path(project_source_path,
+                                                item[len(project_bcs_path) + 1:item.find('.java/pdg') + 2])
                     names = get_basename(item).split('.pdg_')
                     function_name = names[0]
                     function_name = function_name[5:]

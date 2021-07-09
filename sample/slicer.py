@@ -62,9 +62,9 @@ class Slicer:
             # print 'found root nodes'
             self.extract_slices()
             # print 'Extracted Slices', self.pdg_graph_file
-        except Exception, e:
+        except Exception as e:
             print 'Error in slicing: ', self.pdg_graph_file
-            print e.message
+            print e
             self.error = True
 
     def render_pdf_graph(self, graph_file):
@@ -485,7 +485,13 @@ class Slicer:
                     slice_graph.node[node]['label'] = ' '.join(kept_parts)
                     # Save line number
                     if 'labelURL' in slice_graph.node[node]:
-                        line_number = slice_graph.node[node]['labelURL'].split(':')[-2]
+			line_number = 0
+			if slice_graph.node[node]['labelURL'].count(':') == 2:
+                            line_number = slice_graph.node[node]['labelURL'].split(':')[-2]
+			elif slice_graph.node[node]['labelURL'].count(':') == 1:
+			    line_number = slice_graph.node[node]['labelURL'].split(':')[-1]
+			else:
+			    pass
                         slice_graph.node[node]['line'] = line_number
                         del slice_graph.node[node]['labelURL']
                 # print node_info['label']

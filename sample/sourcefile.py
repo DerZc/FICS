@@ -9,6 +9,7 @@ import pandas
 
 from utils.inout import *
 
+import os
 
 def get_diagnostics_info(diagnostics):
     return {'severity': diagnostics.severity,
@@ -63,7 +64,8 @@ class SourceFile:
             self.compile_arguments.remove("-Wexpansion-to-defined")
         # self.compile_arguments = [ca for ca in self.compile_arguments if ca.startswith('-I')] + ['-O0']
         args += self.compile_arguments
-        args += ['-I/usr/lib/clang/3.8.0/include/']
+        # args += ['-I/usr/lib/clang/3.8.0/include/']
+        args += ['/home/llvm-5.0.1/lib/clang/5.0.1/include/']
         args += self.arguments.includes
         # print 'args', args
 
@@ -83,7 +85,8 @@ class SourceFile:
         write_file(time_file, '{}'.format(parse_elapsed))
         change_directory(cwd)
         # llvm_dis = join_path(self.arguments.llvm_config, 'llvm-dis')
-        llvm_dis = 'llvm-dis-3.8'
+        # llvm_dis = 'llvm-dis-3.8'
+        llvm_dis = 'llvm-dis'
 	LOG = open(llvm_dis_log_file, 'w')
         try:
             if is_file(bc_file):
@@ -105,6 +108,83 @@ class SourceFile:
             prev_line = line
         functions.writelines(functions_name)
         return True
+
+    def emit_java_bc(self):
+        # parent_dir = get_parent_dir(self.source_file).replace(self.arguments.projects_dir, self.arguments.bcs_dir)
+        # make_dir_if_not_exist(parent_dir)
+        # self.source_file_bc_dir = join_path(parent_dir, get_basename(self.source_file))
+        # make_dir_if_not_exist(self.source_file_bc_dir)
+        # bc_file = join_path(self.source_file_bc_dir, get_filename_without_ext(get_basename(self.source_file)) + '.bc')
+        # ll_file = join_path(self.source_file_bc_dir, get_filename_without_ext(get_basename(self.source_file)) + '.ll')
+        # llvm_log_file = join_path(self.source_file_bc_dir, 'llvm.log.txt')
+        # llvm_as_log_file = join_path(self.source_file_bc_dir, 'llvm-as.log.txt')
+        # function_names_file = join_path(self.source_file_bc_dir, 'functions.txt')
+        # time_file = join_path(self.source_file_bc_dir, 'bc.time.txt')
+	project_bc_dir = join_path(self.arguments.data_dir, self.arguments.bcs_dir, self.arguments.current_project)
+	make_dir_if_not_exist(project_bc_dir)
+        args = []
+        # print self.compile_arguments
+	import_packages_args = ''
+	if self.compile_arguments is not None and len(self.compile_arguments) > 0:
+	    import_packages_args = self.compile_arguments[0]
+	    import_packages_args += ':/home/JLang/jdk/out/classes'
+	else:
+            import_packages = []
+            jar_path = join_path(self.arguments.data_dir, self.arguments.projects_dir, self.arguments.current_project)
+	    make_dir_if_not_exist(jar_path)
+            for f in get_files_in_dir(jar_path, ext='.jar'):
+                import_packages.append(f.replace(str(join_path(self.arguments.data_dir, self.arguments.projects_dir, self.arguments.current_project) + '/'), ''))
+	    # import_packages_args = ':'.join(import_packages)
+	    for f in get_files_in_dir(jar_path, ext = '.class'):
+	        class_dir = get_parent_dir(f)
+	        if str(class_dir) not in import_packages:
+	    	    import_packages.append(str(class_dir))
+	    import_packages_args = ':'.join(import_packages)
+            if import_packages_args == '':
+	        import_packages_args = 'target/classes:/home/JLang/jdk/out/classes'
+            else:
+                import_packages_args +=':target/classes:/home/JLang/jdk/out/classes'
+        cwd = get_current_directory()
+        change_directory(self.project_dir)
+        # print [self.arguments.clang, '-emit-llvm', '-c', '-g', self.source_file, '-o', bc_file] + args
+        LOG = open('/dev/null', 'w')
+        parse_start_time = default_timer()
+        try:
+            # call([self.arguments.clang, '-emit-llvm', '-c', '-g', self.source_file, '-o', bc_file] + args,
+            #      stdout=LOG, stderr=subprocess.STDOUT, close_fds=True)
+            # jlangc -cp  "$JDK8"/out/classes:target/lib/junit-3.8.1.jar:target/classes -sourcepath src -d out -entry-point ValueTest /home/data/projects/Cli-5/src/test/org/apache/commons/cli/ValueTest.java
+            call(['jlangc', '-cp', import_packages_args, '-sourcepath', 'src', '-d', str(project_bc_dir), '-entry-point', get_basename(self.source_file).replace('.java', ''), self.source_file], 
+                 stdout=LOG, stderr=subprocess.STDOUT, close_fds=True)
+	    # cmd = 'jlangc -cp ' + import_packages_args + ' -sourcepath src -d ' + str(join_path(self.arguments.data_dir, self.arguments.bcs_dir, self.arguments.current_project)) + ' -entry-point ' +  get_basename(self.source_file).replace('.java', '') + ' ' +  self.source_file
+        except:
+            print 'crash in jlangc', self.source_file
+            return True
+        parse_elapsed = default_timer() - parse_start_time
+        # write_file(time_file, '{}'.format(parse_elapsed))
+        change_directory(cwd)
+        # llvm_dis = 'llvm-dis'
+        # llvm_as = 'llvm-as'
+	# LOG = open(llvm_as_log_file, 'w')
+        # try:
+        #     if is_file(ll_file):
+        #         call([llvm_as, ll_file, '-o', bc_file],
+        #              stdout=LOG, stderr=subprocess.STDOUT, close_fds=True)
+        #     else:
+        #         print 'No ll file:', ll_file
+        # except:
+        #     print llvm_as, ' cannot be found'
+        #     return True
+        # functions = open(function_names_file, 'w')
+        # lines = read_lines(ll_file)
+        # functions_name = []
+        # prev_line = ''
+        # for line in lines:
+        #     if line[0:6] == 'define':
+        #         functions_name.append(line + prev_line + '\n')
+        #     prev_line = line
+        # functions.writelines(functions_name)
+        return True
+
 
     def emit_llvm_ll_and_functions(self, bitcode_file):
         bitcode_filename = get_basename(bitcode_file)
@@ -195,6 +275,8 @@ class SourceFile:
             return self.emit_llvm_ast()
         elif self.analysis_type == 'bc':
             return self.emit_llvm_bc()
+	elif self.analysis_type == 'javabc':
+	    return self.emit_java_bc()
         else:
             return False
 

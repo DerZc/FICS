@@ -70,8 +70,9 @@ class BitCodeFile:
 
                 parse_elapsed = default_timer() - parse_start_time
                 write_file(time_file, '{}'.format(parse_elapsed))
-            except:
+            except Exception as e:
                 print 'crash in pdg dumper', self.file_info, function_name
+		print 'error message: ', str(e)
                 return False
 
         return True
@@ -82,8 +83,18 @@ class BitCodeFile:
         try:
             for line in read_lines(functions_file):
                 # Do not consider inlinehint functions
-                if ' inlinehint ' not in line.split(':')[1]:
+		if '%"' in line and '@"' in line:
+		    functions.append(line.split('@')[1].split('"')[1])
+		    continue
+		if '@"' in line and '%"' not in line:
+		    functions.append(line.split('"')[1])
+		    continue
+                if ':' in line and ' inlinehint ' not in line.split(':')[1]:
                     functions.append(line.split('@')[1].split('(')[0])
+		elif ':' not in line:
+                    functions.append(line.split('@')[1].split('(')[0])
+		else:
+		    pass
         except Exception, e:
             print functions_file, e
         return functions

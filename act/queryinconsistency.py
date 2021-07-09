@@ -244,10 +244,12 @@ class QueryInconsistency(Act):
                     # print construct['lines']
 
                     if construct_counter > 1:
-                        self.read_lines_of_code(construct, True)
+			print construct
+                        # self.read_lines_of_code(construct, True)
                     else:
                         print '-' * 50
-                        self.read_lines_of_code(construct)
+			print construct
+                        # self.read_lines_of_code(construct)
                         print '-' * 50
                     # We break here because we only show one construct in each cluster to make the output more readable
                     # break

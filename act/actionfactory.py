@@ -1,6 +1,7 @@
 from asbuilder import ASBuilder
 from pdgbuilder import PDGBuilder
 from bcbuilder import BCBuilder
+from javabcbuilder import JAVABCBuilder
 from cluster import Cluster
 from actiontype import ActionType
 from featureextractor import FeatureExtractor
@@ -28,6 +29,11 @@ class ActionFactory:
                 print '|  Retrieve bc from the source codes  |'
                 print '======================================='
                 self.start(BCBuilder(arguments=self.arguments))
+            elif action == ActionType.JAVABC.name:
+                print '======================================='
+                print '|  Retrieve bc from the java codes    |'
+                print '======================================='
+                self.start(JAVABCBuilder(arguments=self.arguments))
             elif action == ActionType.PDG.name:
                 print '======================================='
                 print '| Retrieve PDG from the LLVM bitcodes |'
