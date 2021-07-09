@@ -42,4 +42,4 @@
 
 
 # Analysis Java Program
-To analysis Java program, you need to download and install [JLang](https://github.com/polyglot-compiler/JLang). Then use the script [get_inconsistencies_of_java_programs_NN_G2v.sh](./scripts/get_inconsistencies_of_java_programs_NN_G2v.sh) to analysis the Java program. We just modify the generation of bc files and did not modify anything else.
+To analysis Java program, you need to download and install [JLang](https://github.com/polyglot-compiler/JLang). Then use the script [get_inconsistencies_of_java_programs_NN_G2v.sh](./scripts/get_inconsistencies_of_java_programs_NN_G2v.sh) to analysis the Java program. For example: ```sh scripts/get_inconsistencies_of_java_programs_NN_G2v.sh Cli p ns```. We just modify the generation of bc files and did not modify anything else. 
